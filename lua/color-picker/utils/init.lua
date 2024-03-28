@@ -6,7 +6,7 @@ M.HexToRGB = function(hex) --{{{
 end --}}}
 
 M.rgbToHex = function(r, g, b) --{{{
-	return string.format("#%02x%02x%02x", r, g, b)
+	return string.format("%02x%02x%02x", r, g, b)
 end --}}}
 
 M.round = function(num, numDecimalPlaces) --{{{

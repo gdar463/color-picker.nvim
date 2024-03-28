@@ -218,9 +218,9 @@ local function update_output() --{{{
 		end
 	elseif output_type == "hex" then
 		if color_mode == "rgb" then
-			output = rgbToHex(arg1, arg2, arg3) .. transp_hex
+			output = "0x" .. transp_hex .. rgbToHex(arg1, arg2, arg3)
 		else
-			output = hslToHex(arg1, arg2, arg3) .. transp_hex
+			output = "0x" .. transp_hex .. hslToHex(arg1, arg2, arg3)
 		end
 	elseif output_type == "hsl" then
 		output = "hsl"
@@ -567,7 +567,7 @@ end --}}}
 -------------------------------------
 
 local function detect_colors(str) --{{{
-	local hex_pattern = "#%x%x%x%x?%x?%x?%x?%x?"
+	local hex_pattern = "0x%x%x%x%x?%x?%x?%x?%x?"
 	local rgb_pattern = "rgba?%(%s*%d+%s*,%s*%d+%s*,%s*%d+%s*.*%)"
 	local hsl_pattern = "hsla?%(%s*%d+%s*,%s*%d+%s*%%*,%s*%d+%s*%%*.*%)"
 
@@ -631,15 +631,15 @@ local function sandwich(cur_buf, cur_line, cur_pos, replace_text) --{{{
 end --}}}
 
 local function sandwich_processor(str) --{{{
-	local hex_capture_pattern = "#(%x%x%x%x%x%x)"
-	local hexa_capture_pattern = "#(%x%x%x%x%x%x)(%x%x)"
-  local short_hex_capture_pattern = "#(%x%x%x)"
+	local hex_capture_pattern = "0x(%x%x%x%x%x%x)"
+	local hexa_capture_pattern = "0x(%x%x)(%x%x%x%x%x%x)"
+  local short_hex_capture_pattern = "0x(%x%x%x)"
 	local rgba_capture_pattern = "rgba%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,?%s*(%d+%.?%d*)%s*%)"
 	local hsla_capture_pattern = "hsla%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*(%d+%.?%d*)%s*%)"
 	local rgb_capture_pattern = "rgb%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,?%s*%)"
 	local hsl_capture_pattern = "hsl%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*%)"
 
-	local _, _, hex_val, hex_trans = string.find(str, hexa_capture_pattern)
+	local _, _, hex_trans, hex_val = string.find(str, hexa_capture_pattern)
 	local _, _, hex = string.find(str, hex_capture_pattern)
 	local _, _, short_hex = string.find(str, short_hex_capture_pattern)
 	local _, _, ra, ga, ba, rgba = string.find(str, rgba_capture_pattern)
