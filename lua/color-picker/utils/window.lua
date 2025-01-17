@@ -573,7 +573,7 @@ local function detect_colors(str) --{{{
 	local hex_pattern = "0x%x%x%x%x?%x?%x?%x?%x?"
 	local rgb_pattern = "rgba?%(%s*%d+%s*,%s*%d+%s*,%s*%d+%s*.*%)"
 	local hsl_pattern = "hsla?%(%s*%d+%s*,%s*%d+%s*%%*,%s*%d+%s*%%*.*%)"
-	local hslcss_pattern = "%d+%.?%d*%s*%d+%.?%d*%%%s*%d+%.?%d*%%"
+	local hslcss_pattern = "%d+(?:%.%d+)?%s*%d+(?:%.%d+)?%%%s*%d+(?:%.%d+)?%%"
 
 	local results = {}
 	local patterns = { hex_pattern, rgb_pattern, hsl_pattern, hslcss_pattern }
@@ -642,7 +642,7 @@ local function sandwich_processor(str) --{{{
 	local hsla_capture_pattern = "hsla%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*(%d+%.?%d*)%s*%)"
 	local rgb_capture_pattern = "rgb%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,?%s*%)"
 	local hsl_capture_pattern = "(hsl)%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*%)"
-	local hslcss_capture_pattern = "(%d+%.?%d*)%s*(%d+%.?%d*)%%%s*(%d+%.?%d*)%%"
+	local hslcss_capture_pattern = "(%d+(?:%.%d+)?)%s*(%d+(?:%.%d+)?)%%%s*(%d+(?:%.%d+)?)%%"
 
 	local _, _, hex_trans, hex_val = string.find(str, hexa_capture_pattern)
 	local _, _, hex = string.find(str, hex_capture_pattern)
