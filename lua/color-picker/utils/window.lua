@@ -197,7 +197,7 @@ local function update_output() --{{{
 	if transparency_mode == true then
 		alpha_string = "a"
 		alpha_value_string = ", " .. alpha_value
-        transp_hex = string.format("%02x", round(color_values[5]*(255/100) + 0.001)) -- added 0.001 for rounding 0.5 to 1
+		transp_hex = string.format("%02x", round(color_values[5] * (255 / 100) + 0.001)) -- added 0.001 for rounding 0.5 to 1
 	end
 
 	if output_type == "rgb" then
@@ -234,6 +234,8 @@ local function update_output() --{{{
 			.. "%"
 			.. alpha_value_string
 			.. ")"
+	elseif output_type == "hslcss" then
+		output = arg1 .. " " .. arg2 .. "% " .. arg3 .. "%"
 	end
 
 	local fg_color = get_fg_color()
@@ -248,13 +250,15 @@ local function update_output() --{{{
 end --}}}
 
 local function change_output_type() --{{{
-    if output_type == "rgb" then
-        output_type = "hsl"
-    elseif output_type == "hsl" then
-        output_type = "hex"
-    elseif output_type == "hex" then
-        output_type = "rgb"
-    end
+	if output_type == "rgb" then
+		output_type = "hsl"
+	elseif output_type == "hsl" then
+		output_type = "hslcss"
+	elseif output_type == "hslcss" then
+		output_type = "hex"
+	elseif output_type == "hex" then
+		output_type = "rgb"
+	end
 
 	update_output()
 end --}}}
@@ -399,7 +403,6 @@ local function toggle_transparency_slider() --{{{
 
 		api.nvim_win_set_width(win, win_width + potential_win_width)
 		api.nvim_win_set_height(win, win_height + 1)
-
 	else
 		transparency_mode = false
 
@@ -570,9 +573,10 @@ local function detect_colors(str) --{{{
 	local hex_pattern = "0x%x%x%x%x?%x?%x?%x?%x?"
 	local rgb_pattern = "rgba?%(%s*%d+%s*,%s*%d+%s*,%s*%d+%s*.*%)"
 	local hsl_pattern = "hsla?%(%s*%d+%s*,%s*%d+%s*%%*,%s*%d+%s*%%*.*%)"
+	local hslcss_pattern = "%d+%s*%d+%%%s*%d+%%"
 
 	local results = {}
-	local patterns = { hex_pattern, rgb_pattern, hsl_pattern }
+	local patterns = { hex_pattern, rgb_pattern, hsl_pattern, hslcss_pattern }
 
 	for _, pattern in ipairs(patterns) do
 		local start_index = 1
@@ -633,11 +637,12 @@ end --}}}
 local function sandwich_processor(str) --{{{
 	local hex_capture_pattern = "0x(%x%x%x%x%x%x)"
 	local hexa_capture_pattern = "0x(%x%x)(%x%x%x%x%x%x)"
-  local short_hex_capture_pattern = "0x(%x%x%x)"
+	local short_hex_capture_pattern = "0x(%x%x%x)"
 	local rgba_capture_pattern = "rgba%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,?%s*(%d+%.?%d*)%s*%)"
 	local hsla_capture_pattern = "hsla%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*(%d+%.?%d*)%s*%)"
 	local rgb_capture_pattern = "rgb%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,?%s*%)"
 	local hsl_capture_pattern = "hsl%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*%)"
+	local hslcss_capture_pattern = "(%d+)%s*(%d+)%%%s*(%d+)%%"
 
 	local _, _, hex_trans, hex_val = string.find(str, hexa_capture_pattern)
 	local _, _, hex = string.find(str, hex_capture_pattern)
@@ -646,15 +651,16 @@ local function sandwich_processor(str) --{{{
 	local _, _, ha, sa, la, hsla = string.find(str, hsla_capture_pattern)
 	local _, _, r, g, b = string.find(str, rgb_capture_pattern)
 	local _, _, h, s, l = string.find(str, hsl_capture_pattern)
-    if hex_val then
+	local _, _, h, s, l = string.find(str, hslcss_capture_pattern)
+	if hex_val then
 		return { "hex", hex_val, hex_trans }
-    elseif hex then
+	elseif hex then
 		return { "hex", hex }
-  elseif short_hex then
-    local red = short_hex:sub(1, 1)
-    local green = short_hex:sub(2, 2)
-    local blue = short_hex:sub(3, 3)
-    return { "hex", red .. red .. green .. green .. blue .. blue }
+	elseif short_hex then
+		local red = short_hex:sub(1, 1)
+		local green = short_hex:sub(2, 2)
+		local blue = short_hex:sub(3, 3)
+		return { "hex", red .. red .. green .. green .. blue .. blue }
 	elseif ra then
 		return { "rgb", tonumber(ra), tonumber(ga), tonumber(ba), tonumber(rgba) }
 	elseif ha then
@@ -869,109 +875,110 @@ end --}}}
 
 M.pop = function(insert_or_normal_mode) --{{{
 	target_buf = api.nvim_get_current_buf()
-    if vim.api.nvim_buf_get_option(target_buf, "filetype") == "color-picker" then
-        vim.api.nvim_buf_delete(0, {})
-    else
-        target_line = api.nvim_get_current_line()
-        target_pos = api.nvim_win_get_cursor(0)
+	if vim.api.nvim_buf_get_option(target_buf, "filetype") == "color-picker" then
+		vim.api.nvim_buf_delete(0, {})
+	else
+		target_line = api.nvim_get_current_line()
+		target_pos = api.nvim_win_get_cursor(0)
 
-        buf = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_buf_set_option(buf, "filetype", "color-picker")
+		buf = vim.api.nvim_create_buf(false, true)
+		vim.api.nvim_buf_set_option(buf, "filetype", "color-picker")
 
-        api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+		api.nvim_buf_clear_namespace(buf, ns, 0, -1)
 
-        win = vim.api.nvim_open_win(buf, true, {
-            relative = "cursor",
-            width = 18,
-            col = 0,
-            row = 0,
-            style = "minimal",
-            height = 4,
-            border = M.user_settings.border,
-        })
+		win = vim.api.nvim_open_win(buf, true, {
+			relative = "cursor",
+			width = 18,
+			col = 0,
+			row = 0,
+			style = "minimal",
+			height = 4,
+			border = M.user_settings.border,
+		})
 
-        --attention
-        vim.api.nvim_win_set_option(
-            win,
-            "winhl",
-            "Normal:"
-                .. M.user_settings.background_highlight_group
-                .. ",FloatBorder:"
-                .. M.user_settings.border_highlight_group
-        )
+		--attention
+		vim.api.nvim_win_set_option(
+			win,
+			"winhl",
+			"Normal:"
+				.. M.user_settings.background_highlight_group
+				.. ",FloatBorder:"
+				.. M.user_settings.border_highlight_group
+		)
 
-        -- reset color values, action_group & initialize the UI
-        color_values = { 0, 0, 0, nil, 100 }
-        transparency_mode = false
-        action_group = {}
-        set_mappings()
-        create_empty_lines()
-        setup_virt_text()
-        update_boxes(5)
+		-- reset color values, action_group & initialize the UI
+		color_values = { 0, 0, 0, nil, 100 }
+		transparency_mode = false
+		action_group = {}
+		set_mappings()
+		create_empty_lines()
+		setup_virt_text()
+		update_boxes(5)
 
-        -- detect & try to parse cursor colors {{{
-        local detected_sandwich = sandwich_detector(target_buf, target_line, target_pos)
+		-- detect & try to parse cursor colors {{{
+		local detected_sandwich = sandwich_detector(target_buf, target_line, target_pos)
 
-        if detected_sandwich then
-            local new_sandwich = sandwich_processor(detected_sandwich)
+		if detected_sandwich then
+			local new_sandwich = sandwich_processor(detected_sandwich)
 
-            if new_sandwich then
-                if new_sandwich[1] == "rgb" or new_sandwich[1] == "hsl" then
-                    color_mode = new_sandwich[1]
-                    output_type = new_sandwich[1]
-                    color_values = { new_sandwich[2], new_sandwich[3], new_sandwich[4], color_values[4], color_values[5] }
+			if new_sandwich then
+				if new_sandwich[1] == "rgb" or new_sandwich[1] == "hsl" then
+					color_mode = new_sandwich[1]
+					output_type = new_sandwich[1]
+					color_values =
+						{ new_sandwich[2], new_sandwich[3], new_sandwich[4], color_values[4], color_values[5] }
 
-                    if #new_sandwich == 5 then --> if rgba or hsla
-                        color_values[5] = new_sandwich[5] * 100
-                        if color_values[5] > 100 then
-                            color_values[5] = 100
-                        end
+					if #new_sandwich == 5 then --> if rgba or hsla
+						color_values[5] = new_sandwich[5] * 100
+						if color_values[5] > 100 then
+							color_values[5] = 100
+						end
 
-                        update_number(5, 0)
-                        toggle_transparency_slider()
-                    end
-                else
-                    local converted_hex = HexToRGB(new_sandwich[2])
-                    color_mode = "rgb"
-                    output_type = "hex"
-                    color_values = {
-                        converted_hex[1],
-                        converted_hex[2],
-                        converted_hex[3],
-                        color_values[4],
-                        color_values[5],
-                    }
-                    if #new_sandwich == 3 then --> if rgba or hsla
-                        color_values[5] = round(tonumber(new_sandwich[3], 16) * (100/255))
-                        if color_values[5] > 100 then
-                            color_values[5] = 100
-                        end
+						update_number(5, 0)
+						toggle_transparency_slider()
+					end
+				else
+					local converted_hex = HexToRGB(new_sandwich[2])
+					color_mode = "rgb"
+					output_type = "hex"
+					color_values = {
+						converted_hex[1],
+						converted_hex[2],
+						converted_hex[3],
+						color_values[4],
+						color_values[5],
+					}
+					if #new_sandwich == 3 then --> if rgba or hsla
+						color_values[5] = round(tonumber(new_sandwich[3], 16) * (100 / 255))
+						if color_values[5] > 100 then
+							color_values[5] = 100
+						end
 
-                        update_number(5, 0)
-                        toggle_transparency_slider()
-                    end
-                end
-            end
+						update_number(5, 0)
+						toggle_transparency_slider()
+					end
+				end
+			end
 
-            set_color_marks(color_mode)
-            update_number(1, 0)
-            update_number(2, 0)
-            update_number(3, 0)
+			set_color_marks(color_mode)
+			update_number(1, 0)
+			update_number(2, 0)
+			update_number(3, 0)
 
-            sandwich_mode = true
-        else
-            sandwich_mode = false
-        end
+			sandwich_mode = true
+		else
+			sandwich_mode = false
+		end
 
-        if insert_or_normal_mode == "insert" then
-            vim.cmd("stopinsert")
-        end
+		if insert_or_normal_mode == "insert" then
+			vim.cmd("stopinsert")
+		end
 
-        print_output_mode = insert_or_normal_mode --}}}
+		print_output_mode = insert_or_normal_mode --}}}
 
-        vim.api.nvim_win_set_option(win, "scrolloff", 0)
-        vim.api.nvim_buf_set_option(buf, "modifiable", false)
-    end
+		vim.api.nvim_win_set_option(win, "scrolloff", 0)
+		vim.api.nvim_buf_set_option(buf, "modifiable", false)
+	end
 end --}}}
 
 -------------------------------------
