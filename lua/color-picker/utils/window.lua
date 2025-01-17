@@ -641,7 +641,7 @@ local function sandwich_processor(str) --{{{
 	local rgba_capture_pattern = "rgba%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,?%s*(%d+%.?%d*)%s*%)"
 	local hsla_capture_pattern = "hsla%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*(%d+%.?%d*)%s*%)"
 	local rgb_capture_pattern = "rgb%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,?%s*%)"
-	local hsl_capture_pattern = "hsl%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*%)"
+	local hsl_capture_pattern = "(hsl)%(%s*(%d+)%s*,%s*(%d+)%s*%%*,%s*(%d+)%s*%%,?%s*%)"
 	local hslcss_capture_pattern = "(%d+)%s*(%d+)%%%s*(%d+)%%"
 
 	local _, _, hex_trans, hex_val = string.find(str, hexa_capture_pattern)
@@ -650,7 +650,7 @@ local function sandwich_processor(str) --{{{
 	local _, _, ra, ga, ba, rgba = string.find(str, rgba_capture_pattern)
 	local _, _, ha, sa, la, hsla = string.find(str, hsla_capture_pattern)
 	local _, _, r, g, b = string.find(str, rgb_capture_pattern)
-	local _, _, h, s, l = string.find(str, hsl_capture_pattern)
+	local _, _, hsl, h, s, l = string.find(str, hsl_capture_pattern)
 	local _, _, h, s, l = string.find(str, hslcss_capture_pattern)
 	if hex_val then
 		return { "hex", hex_val, hex_trans }
@@ -667,8 +667,10 @@ local function sandwich_processor(str) --{{{
 		return { "hsl", tonumber(ha), tonumber(sa), tonumber(la), tonumber(hsla) }
 	elseif r then
 		return { "rgb", tonumber(r), tonumber(g), tonumber(b) }
-	elseif h then
+	elseif hsl then
 		return { "hsl", tonumber(h), tonumber(s), tonumber(l) }
+	elseif h then
+		return { "hslcss", tonumber(h), tonumber(s), tonumber(l) }
 	end
 end --}}}
 
